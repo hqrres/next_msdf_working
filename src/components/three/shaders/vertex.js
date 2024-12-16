@@ -13,13 +13,6 @@ varying vec2 v_uv;
 varying vec3 v_lightDirection;
 varying vec3 v_normal;
 
-float smootherstep(float edge0, float edge1, float x) {
-  // Scale, bias and saturate x to 0..1 range
-  x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-  // Evaluate polynomial
-  return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
-}
-
 void main() {
   vec3 customPosition = position;
 
@@ -32,9 +25,11 @@ void main() {
   customPosition.y = position.y * c - position.z * s;
   customPosition.z = position.y * s + position.z * c;
 
-  // Smooth scaling effect with smootherstep
-  float scaleFactor = smootherstep(0.0, 25.0, position.x) * 4.0 + 1.0; // Scale from 1x to 5x
-  customPosition *= scaleFactor;
+  // Custom scaling effect on y and z axes
+  float t = clamp((position.x - 3.0) / 50.0, 0.0, 1.0); // Adjust the range for scaling
+  float scaleFactor = mix(1.0, 5.0, pow(t, 3.0)); // Custom curve with cubic easing
+  customPosition.y *= scaleFactor;
+  customPosition.z *= scaleFactor;
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(customPosition, 1.);
 
