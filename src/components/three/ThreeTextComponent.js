@@ -8,10 +8,6 @@ import { MSDFTextGeometry, MSDFTextMaterial } from "three-msdf-text-utils";
 import { fragmentShader } from "./shaders/fragment";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-const stats = new Stats();
-stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild(stats.dom);
-
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -20,11 +16,11 @@ const sizes = {
 export class Canvas {
   constructor(canvas) {
     this.scene = new THREE.Scene();
-    this.count = 8000;
+    // this.count = 8000;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
     });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(window.innerWidth / 1.2, window.innerHeight / 1.2);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.setClearColor(0x0000ff);
@@ -49,8 +45,8 @@ export class Canvas {
     this.scene.add(this.spotLight);
 
     const near = window.innerWidth / window.innerHeight;
-    this.camera = new THREE.PerspectiveCamera(75, near, 0.1, 10000);
-    this.camera.position.z = 40;
+    this.camera = new THREE.PerspectiveCamera(35, near, 0.1, 10000);
+    this.camera.position.z = 200;
 
     this.orbitControls = new OrbitControls(
       this.camera,
@@ -59,6 +55,14 @@ export class Canvas {
 
     this.orbitControls.enableZoom = true;
     this.clock = new THREE.Clock();
+
+    if (typeof window !== 'undefined') {
+      const stats = new Stats();
+      stats.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
+      document.body.appendChild(stats.dom);
+
+      this.stats = stats;
+    }
 
     this.init();
   }
@@ -69,7 +73,7 @@ export class Canvas {
       this.handleLoadFont("/assets/horizon.fnt"),
     ]).then(([atlas, font]) => {
       const geometry = new MSDFTextGeometry({
-        text: "ART",
+        text: "KESKEL",
         font: font,
         align: "center",
       });
@@ -80,17 +84,18 @@ export class Canvas {
 
       this.mesh = new THREE.Mesh(geometry, material);
       this.mesh.rotation.x = Math.PI;
-      const scale = 3;
+      const scale = 2.0;
       this.mesh.position.x = (-geometry.layout.width / 2) * scale;
-      this.mesh.scale.set(scale, scale, scale);
+      this.mesh.position.y = -110.0;
+      this.mesh.scale.set(scale, 9.0, scale);
 
       this.createRenderTarget();
     });
 
-    this.createFloor();
     this.animate();
     this.handleResize();
   }
+
   handleLoadFontAtlas(path) {
     const promise = new Promise((resolve, reject) => {
       const loader = new THREE.TextureLoader();
@@ -148,6 +153,11 @@ export class Canvas {
       window.innerHeight
     );
 
+    this.renderTarget.texture.format = THREE.RGBAFormat;
+    this.renderTarget.texture.minFilter = THREE.LinearFilter;
+    this.renderTarget.texture.magFilter = THREE.LinearFilter;
+    this.renderTarget.texture.generateMipmaps = false;
+
     this.renderTargetCamera = new THREE.PerspectiveCamera(
       75,
       isMobile
@@ -159,6 +169,7 @@ export class Canvas {
     this.renderTargetCamera.position.z = 375;
 
     this.renderTargetScene = new THREE.Scene();
+    this.renderTargetScene.background = new THREE.Color(0x000);
 
     this.renderTargetScene.add(this.mesh);
     this.createMesh();
@@ -168,7 +179,7 @@ export class Canvas {
     if (!this.renderTarget) {
       return;
     }
-    const geometry = new THREE.TorusGeometry(10, 3, 30, 100);
+    const geometry = new THREE.BoxGeometry(100, 10, 10, 30, 10, 30);
 
     this.renderTargetMaterial = new THREE.RawShaderMaterial({
       vertexShader,
@@ -184,34 +195,23 @@ export class Canvas {
           value: new THREE.Color(0xffffff),
         },
         u_lightIntensity: {
-          value: 0.675,
+          value: 2.675,
         },
       },
-      transparent: true,
+      transparent: false,
+      wireframe: false,
     });
 
     this.renderTargetMesh = new THREE.Mesh(geometry, this.renderTargetMaterial);
 
-    this.renderTargetMesh.rotation.set(2, 2.8, 0);
+    this.renderTargetMesh.rotation.set(0, 0, 0);
     this.scene.add(this.renderTargetMesh);
   }
 
-  createFloor() {
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x0000ff,
-    });
-
-    const geometry = new THREE.CircleGeometry(50, 50);
-    const plane = new THREE.Mesh(geometry, material);
-
-    this.scene.add(plane);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -15.5;
-    plane.receiveShadow = true;
-  }
-
   animate() {
-    stats.begin();
+    if (this.stats) {
+      this.stats.begin();
+    }
     const elapsedTime = this.clock.getElapsedTime();
 
     this.orbitControls.update();
@@ -233,7 +233,9 @@ export class Canvas {
     }
 
     this.renderer.render(this.scene, this.camera);
-    stats.end();
+    if (this.stats) {
+      this.stats.end();
+    }
 
     requestAnimationFrame(() => this.animate());
   }

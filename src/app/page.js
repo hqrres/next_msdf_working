@@ -12,7 +12,7 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center h-screen">
       <h1>Three.js Text Example</h1>
       <canvas className="webgl-canvas" style={{ width: '100%', height: '100vh' }}></canvas>
     </div>

@@ -19,10 +19,10 @@ vec3 light_reflection(vec3 lightColor) {
 }
 
 void main() {
-  float speed = u_time * 0.5;
-  vec2 repeat = vec2(7., 5.);
+  float speed = u_time * 0.15;
+  vec2 repeat = vec2(2., 1.);
 
-  vec2 uv = fract(v_uv * repeat + vec2(1., speed));
+  vec2 uv = fract(v_uv * repeat + vec2(speed, 0.0));
 
   vec3 light_value = light_reflection(u_spotLightColor);
   light_value *= u_lightIntensity;
